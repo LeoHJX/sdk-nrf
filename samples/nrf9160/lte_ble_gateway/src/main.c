@@ -43,7 +43,23 @@
  * if the event NRF_CLOUD_EVT_TRANSPORT_CONNECTED is not received.
  */
 #define RETRY_CONNECT_WAIT K_MSEC(90000)
+#if defined(CONFIG_BOARD_THINGY91_NRF9160NS)
+/*  
+LED1: Red
+LED2: Green
+LED3: Blue
 
+*/
+enum {
+	LEDS_INITIALIZING       = LED_ON(DK_LED1_MSK | DK_LED2_MSK | DK_LED3_MSK),
+	LEDS_LTE_CONNECTING     = LED_BLINK(DK_LED1_MSK),
+	LEDS_LTE_CONNECTED      = LED_ON(DK_LED1_MSK),
+	LEDS_CLOUD_CONNECTING   = LED_BLINK(DK_LED2_MSK),
+	LEDS_CLOUD_PAIRING_WAIT = LED_BLINK(DK_LED2_MSK),
+	LEDS_CLOUD_CONNECTED    = LED_ON(DK_LED2_MSK),
+	LEDS_ERROR              = LED_ON(DK_ALL_LEDS_MSK)
+} display_state;
+#else
 enum {
 	LEDS_INITIALIZING       = LED_ON(0),
 	LEDS_LTE_CONNECTING     = LED_BLINK(DK_LED3_MSK),
@@ -53,7 +69,7 @@ enum {
 	LEDS_CLOUD_CONNECTED    = LED_ON(DK_LED4_MSK),
 	LEDS_ERROR              = LED_ON(DK_ALL_LEDS_MSK)
 } display_state;
-
+#endif
 /* Variable to keep track of nRF cloud user association request. */
 static atomic_val_t association_requested;
 
@@ -200,6 +216,8 @@ static void gps_handler(const struct device *dev, struct gps_event *evt)
 	}
 }
 
+
+
 /**@brief Update LEDs state. */
 static void leds_update(struct k_work *work)
 {
@@ -209,11 +227,23 @@ static void leds_update(struct k_work *work)
 
 	ARG_UNUSED(work);
 
+#if defined(CONFIG_BOARD_THINGY91_NRF9160NS)
+    led_on_mask &= ~(DK_LED3_MSK | DK_LED4_MSK | DK_LED1_MSK | DK_LED2_MSK);
+#else
 	/* Reset LED3 and LED4. */
 	led_on_mask &= ~(DK_LED3_MSK | DK_LED4_MSK);
+#endif
 
-	/* Set LED3 and LED4 to match current state. */
-	led_on_mask |= LED_GET_ON(display_state);
+	/* Set LEDs to match current state. */
+    if(ble_con_stat()){
+        display_state |= LED_BLINK(DK_LED3_MSK); /* add bliking blue indicating ble connected */
+        led_on_mask |= LED_GET_ON(display_state);
+    }
+    else{
+        display_state &= (~(LED_BLINK(DK_LED3_MSK))); /* remove bliking blue indicating ble connected */
+        led_on_mask |= LED_GET_ON(display_state);
+    }
+    
 
 	led_on = !led_on;
 	if (led_on) {

@@ -17,6 +17,7 @@ static bool alarm_pending;
 extern void sensor_data_send(struct nrf_cloud_sensor_data *data);
 
 char *orientation_strings[] = {"LEFT", "NORMAL", "RIGHT", "UPSIDE_DOWN"};
+char *button_strings[] = {"Release", "Press"};
 
 void alarm(void)
 {
@@ -35,7 +36,9 @@ void send_aggregated_data(void)
 	static struct nrf_cloud_sensor_data flip_cloud_data = {
 		.type = NRF_CLOUD_SENSOR_FLIP,
 	};
-
+	static struct nrf_cloud_sensor_data button_cloud_data = {
+		.type = NRF_CLOUD_SENSOR_BUTTON,
+	};
 	struct sensor_data aggregator_data;
 
 	if (!alarm_pending) {
@@ -74,6 +77,22 @@ void send_aggregated_data(void)
 			gps_cloud_data.tag =
 			    *((uint32_t *)&aggregator_data.data[0]);
 			sensor_data_send(&gps_cloud_data);
+			break;
+		case THINGY_BUTTON:
+			printk("%d] Sending button data.\n",
+			       aggregator_element_count_get());
+			if (aggregator_data.length != 1 ||
+				aggregator_data.data[0] >=
+				ARRAY_SIZE(button_strings)) {
+				printk("Unexpected button data format, dropping\n");
+				continue;
+			}
+			button_cloud_data.data.ptr =
+				button_strings[aggregator_data.data[0]];
+			button_cloud_data.data.len = strlen(
+				button_strings[aggregator_data.data[0]]) - 1;
+			sensor_data_send(&button_cloud_data);
+	
 			break;
 
 		default:
