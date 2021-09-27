@@ -92,7 +92,7 @@ static const char psm_disable[] = "AT+CPSMS=";
 /* Enable CSCON (RRC mode) notifications */
 static const char cscon[] = "AT+CSCON=1";
 /* Disable RAI */
-static const char rai_disable[] = "AT+%XRAI=0";
+static const char rai_disable[] = "AT%XRAI=0";
 /* Default RAI setting */
 static char rai_param[2] = CONFIG_LTE_RAI_REQ_VALUE;
 

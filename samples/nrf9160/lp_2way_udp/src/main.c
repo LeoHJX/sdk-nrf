@@ -70,7 +70,7 @@ workerror:
 	if (err) {
 		printk("lte_lc_rai_req, error: %d\n", err);
 	}
-	k_sleep(K_MSEC(100));
+	k_sleep(K_MSEC(400));
 	err = send(client_fd, buffer, 2, 0);
 	if (err < 0) {
 		printk("Failed to transmit UDP packet, %d\n", errno);
