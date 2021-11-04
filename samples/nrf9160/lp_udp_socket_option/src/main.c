@@ -9,6 +9,7 @@
 #include <modem/lte_lc.h>
 #include <net/socket.h>
 #include <modem/at_cmd.h>
+#include <sys/reboot.h>
 
 #define UDP_IP_HEADER_SIZE 28
 
@@ -18,6 +19,7 @@ static struct k_work_delayable server_transmission_work;
 
 static int64_t gs_uptime_ref;
 static bool gs_clear_modem_reset_flag = false;
+static bool gs_socket_transmit_started = false;
 
 K_SEM_DEFINE(lte_connected, 0, 1);
 
@@ -101,14 +103,14 @@ int modem_clear_reset_loop(void)
 	if(err){
 		printk("XFACTORYRESET=1 error: %d\n", err);
 	}
-
+#if 0 /* no need, as sys reboot will be called later.  */
 	k_sleep(K_MSEC(1000));
 
 	err = at_cmd_write("AT+CFUN=1", NULL, 0, NULL);
 	if(err){
 		printk("AT+CFUN=1 error: %d\n", err);
 	}
-
+#endif
 	return err;
 }
 
@@ -116,14 +118,6 @@ static void server_transmission_work_fn(struct k_work *work)
 {
 	int err;
 	char buffer[CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES] = {"\0"};
-
-	if(gs_clear_modem_reset_flag){
-		gs_clear_modem_reset_flag = false;
-		modem_clear_reset_loop();
-		/* could be other ways to do recover, just re schedule for now   */
-		k_work_schedule(&server_transmission_work,
-		K_SECONDS(CONFIG_UDP_DATA_UPLOAD_FREQUENCY_SECONDS));
-	}
 
 	printk("Transmitting UDP/IP payload of %d bytes to the ",
 	       CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES + UDP_IP_HEADER_SIZE);
@@ -144,6 +138,7 @@ static void server_transmission_work_fn(struct k_work *work)
 		return;
 	}
 	err = send(client_fd, buffer, sizeof(buffer), 0);
+	gs_socket_transmit_started = true;
 	gs_uptime_ref = k_uptime_get();
 	if (err < 0) {
 		printk("Failed to transmit UDP packet, %d\n", errno);
@@ -193,7 +188,10 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 	}
 	case LTE_LC_EVT_RRC_UPDATE:
 		if(evt->rrc_mode == LTE_LC_RRC_MODE_IDLE){
-			printk("\n############### modem active duration: %d ms ###########\n", (int32_t)k_uptime_delta(&gs_uptime_ref)); 
+			if(gs_socket_transmit_started == true){
+				gs_socket_transmit_started = false;  /* only measure the time if the transmission started */
+				printk("\n############### modem active duration: %d ms ###########\n", (int32_t)k_uptime_delta(&gs_uptime_ref)); 
+			}
 		}
 		printk("RRC mode: %s\n",
 			evt->rrc_mode == LTE_LC_RRC_MODE_CONNECTED ?
@@ -389,8 +387,22 @@ void main(void)
 	}
 
 	modem_connect();
-
-	k_sem_take(&lte_connected, K_FOREVER);
+	while(1){
+		if( k_sem_take(&lte_connected, K_SECONDS(5)) != 0){
+			if(gs_clear_modem_reset_flag){
+				gs_clear_modem_reset_flag = false;
+				modem_clear_reset_loop();
+				k_sleep(K_SECONDS(2));
+				printk("############ now reboot !\n");
+				sys_reboot(SYS_REBOOT_WARM);
+				/* only for development, recover if entered resetloop*/
+			}
+		}
+		else{
+			break;
+		}
+	}
+	
 #endif
 
 	err = server_init();
