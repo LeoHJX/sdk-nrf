@@ -117,6 +117,7 @@ int modem_clear_reset_loop(void)
 static void server_transmission_work_fn(struct k_work *work)
 {
 	int err;
+	static int32_t cnt;
 	char buffer[CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES] = {"\0"};
 
 	printk("Transmitting UDP/IP payload of %d bytes to the ",
@@ -124,6 +125,14 @@ static void server_transmission_work_fn(struct k_work *work)
 	printk("IP address %s, port number %d\n",
 	       CONFIG_UDP_SERVER_ADDRESS_STATIC,
 	       CONFIG_UDP_SERVER_PORT);
+
+	/* prepare the sample packet */
+	memset(buffer, '#', sizeof(buffer));
+	buffer[sizeof(buffer) - 1] = 0; /* set string end */
+	sprintf(buffer, "pkg: %d", 	++cnt);
+	buffer[strlen(buffer)] = ' ';   /* remove the 0 at endf of pkge: xx  */
+	
+	/* end packet setup   */
 	/* 
 	SO_RAI_LAST: // ok
 	SO_RAI_NO_DATA:
