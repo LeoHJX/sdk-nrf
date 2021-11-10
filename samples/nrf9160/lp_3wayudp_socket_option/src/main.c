@@ -78,7 +78,7 @@ int deep_search_config(bool enable)
 int data_profile_config(void)
 {
 	int err;
-	err = at_cmd_write("AT%XDATAPRFL=2", NULL, 0, NULL);
+	err = at_cmd_write("AT%XDATAPRFL=0", NULL, 0, NULL);
 	return err;
 
 }
