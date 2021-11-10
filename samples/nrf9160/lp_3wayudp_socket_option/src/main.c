@@ -78,7 +78,7 @@ int deep_search_config(bool enable)
 int data_profile_config(void)
 {
 	int err;
-	err = at_cmd_write("AT%XDATAPRFL=0", NULL, 0, NULL);
+	err = at_cmd_write("AT%XDATAPRFL=2", NULL, 0, NULL);
 	return err;
 
 }
@@ -119,6 +119,7 @@ static void server_transmission_work_fn(struct k_work *work)
 {
 	int err;
 	static int32_t cnt;
+	int32_t len = 0;
 	char buffer[CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES] = {"\0"};
 
 	printk("Transmitting UDP/IP payload of %d bytes to the ",
@@ -127,6 +128,11 @@ static void server_transmission_work_fn(struct k_work *work)
 	       CONFIG_UDP_SERVER_ADDRESS_STATIC,
 	       CONFIG_UDP_SERVER_PORT);
 
+	/* clear the socket buffer in case some junk in the buffer */
+	memset(buffer, 0, sizeof(buffer));
+	while( 0 < (len = recv(client_fd, buffer, CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES, MSG_DONTWAIT))  ){
+		printk("########## recv before send: %s, len: %d ###########\n", buffer, len);
+	}
 	/* prepare the sample packet */
 	memset(buffer, '#', sizeof(buffer));
 	buffer[sizeof(buffer) - 1] = 0; /* set string end */
@@ -165,7 +171,7 @@ static void server_transmission_work_fn(struct k_work *work)
 			/* prepare the last packet */
 		memset(buffer, '#', sizeof(buffer));
 		buffer[sizeof(buffer) - 1] = 0; /* set string end */
-		sprintf(buffer, "ack: %d received from server", cnt);
+		sprintf(buffer, "ack: %d not received from server", cnt);
 		buffer[strlen(buffer)] = ' ';   /* remove the 0 at endf of pkge: xx  */
 		
 		/* end packet setup   */
@@ -176,6 +182,7 @@ static void server_transmission_work_fn(struct k_work *work)
 		SO_RAI_ONGOING:
 		SO_RAI_WAIT_MORE:
 		*/
+		/* socket_option_rai_req(true); */
 		option = SO_RAI_LAST;  /* 3way, now on going, which expecting a packet return from server */
 		err = setsockopt(client_fd, SOL_SOCKET, option, NULL, 0);
 		if (err < 0) {
@@ -188,7 +195,8 @@ static void server_transmission_work_fn(struct k_work *work)
 			printk("Failed to transmit UDP packet, %d\n", errno);
 			goto workerror;
 			/* return; */ /* do not return */
-		}		
+		}	
+		printk("send ACK %d to server, fail receive from server\n", cnt);	
         goto workerror;
 		/* return; */ /* do not return */
 	}  
@@ -208,6 +216,7 @@ static void server_transmission_work_fn(struct k_work *work)
 	SO_RAI_ONGOING:
 	SO_RAI_WAIT_MORE:
 	*/
+	/* socket_option_rai_req(true); */
 	option = SO_RAI_LAST;  /* 3way, now on going, which expecting a packet return from server */
 	err = setsockopt(client_fd, SOL_SOCKET, option, NULL, 0);
 	if (err < 0) {
@@ -217,10 +226,11 @@ static void server_transmission_work_fn(struct k_work *work)
 	}
 	err = send(client_fd, buffer, sizeof(buffer), 0);
 	if (err < 0) {
-		printk("Failed to transmit UDP packet, %d\n", errno);
+		printk("### Failed to transmit UDP packet, %d\n", errno);
 		goto workerror;
 		/* return; */ /* do not return */
-	}		
+	}
+	printk("send ACK %d to server, received packet from server\n", cnt);			
 
 workerror:
 	k_work_schedule(&server_transmission_work,
@@ -240,6 +250,7 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 	case LTE_LC_EVT_NW_REG_STATUS:
 		if ((evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_HOME) &&
 		     (evt->nw_reg_status != LTE_LC_NW_REG_REGISTERED_ROAMING)) {
+			printk("### Modem not attached to network, status: %d\n", evt->nw_reg_status);
 			break;
 		}
 
@@ -292,10 +303,11 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 			gs_clear_modem_reset_flag = true; /*  only for debugging, not suggest to do so if it's actuall reset loop caused by battery or power source low */
 
 		}else{
-			printk("### Modem Sleep evt = %d\n",  evt->modem_evt);
+			printk("### other modem event = %d\n",  evt->modem_evt); /* light_search_done, search_done, reset_loop, battery_low, over_heat  */
 		}
 		break;	
 	default:
+		printk("##### other event type: %d\n", evt->type); /* check lte_lc.h for details.  */
 		break;
 	}
 }
@@ -329,7 +341,7 @@ static int configure_low_power(void)
 		printk("lte_lc_edrx_req, error: %d\n", err);
 	}
 #endif
-#if 0
+#if 0 /* skip this one, as socket option used */
 #if defined(CONFIG_UDP_RAI_ENABLE)
 	/** Release Assistance Indication  */
 	err = lte_lc_rai_req(true);
