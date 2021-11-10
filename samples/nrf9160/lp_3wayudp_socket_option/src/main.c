@@ -132,6 +132,7 @@ static void server_transmission_work_fn(struct k_work *work)
 	memset(buffer, 0, sizeof(buffer));
 	while( 0 < (len = recv(client_fd, buffer, CONFIG_UDP_DATA_UPLOAD_SIZE_BYTES, MSG_DONTWAIT))  ){
 		printk("########## recv before send: %s, len: %d ###########\n", buffer, len);
+		memset(buffer, 0, sizeof(buffer));
 	}
 	/* prepare the sample packet */
 	memset(buffer, '#', sizeof(buffer));
