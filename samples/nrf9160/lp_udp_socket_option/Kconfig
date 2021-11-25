@@ -31,7 +31,9 @@ config UDP_EDRX_ENABLE
 
 config UDP_RAI_ENABLE
 	bool "Enable LTE Release Assistance Indication"
-
+config UDP_RECV_TIMEOUT_SECONDS
+	int "timeout for UDP receiving"
+	default 4
 endmenu
 
 module = UDP

@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <modem/lte_lc.h>
 #include <net/socket.h>
+#include <nrf_socket.h>
 #include <modem/at_cmd.h>
 #include <sys/reboot.h>
 
@@ -37,6 +38,22 @@ int socket_option_rai_req(bool enable)
 	}
 
 	return err;
+}
+
+/* %XMODEMSLEEP  */
+int modem_sleep_report_req(bool enable)
+{
+
+	int err;
+
+	if (enable) {
+		err = at_cmd_write("AT%XMODEMSLEEP=1,0,10240", NULL, 0, NULL);
+	} else {
+		err = at_cmd_write("AT%XMODEMSLEEP=0", NULL, 0, NULL);
+	}
+
+	return err;
+
 }
 
 
@@ -77,7 +94,7 @@ int deep_search_config(bool enable)
 int data_profile_config(void)
 {
 	int err;
-	err = at_cmd_write("AT%XDATAPRFL=2", NULL, 0, NULL);
+	err = at_cmd_write("AT%XDATAPRFL=0", NULL, 0, NULL);
 	return err;
 
 }
@@ -290,7 +307,10 @@ static int configure_low_power(void)
 	if (err) {
 		printk("socket_option_rai_req, error: %d\n", err);
 	}
-
+	err = modem_sleep_report_req(true);
+	if(err) {
+		printk("modem_sleep_report_req, error: %d\n", err);
+	}
 	err = data_profile_config();
 	if(err) {
 		printk("data_profile_config, error: %d\n", err);
