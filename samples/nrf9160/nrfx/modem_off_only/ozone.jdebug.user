@@ -1,0 +1,23 @@
+
+
+Breakpoint=C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c:31, State=BP_STATE_ON
+Breakpoint=C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c:32, State=BP_STATE_ON
+Breakpoint=C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c:33, State=BP_STATE_ON
+Breakpoint=C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c:34, State=BP_STATE_ON
+Breakpoint=C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c:38, State=BP_STATE_ON
+OpenDocument="main.c", FilePath="C:/Nordic/Work/ncs/v_leox/nrf/samples/nrf9160/nrfx/modem_off_only/src/main.c", Line=0
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=2, w=741, h=359, TabPos=1, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=1, w=741, h=577, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Memory 1", DockArea=BOTTOM, x=1, y=0, w=1277, h=209, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0x0
+OpenWindow="Functions", DockArea=LEFT, x=0, y=0, w=533, h=1247, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Terminal", DockArea=RIGHT, x=0, y=2, w=741, h=359, TabPos=0, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Console", DockArea=BOTTOM, x=0, y=0, w=1602, h=209, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Zephyr", DockArea=RIGHT, x=0, y=0, w=741, h=284, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, Showing="Task List"
+TableHeader="Functions", SortCol="Name", SortOrder="DESCENDING", VisibleCols=["Name";"Address";"Size";"#Insts";"Source"], ColWidths=[1608;104;100;100;1103]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="...", SortCol="None", SortOrder="ASCENDING", VisibleCols=["..."], ColWidths=[741]
+TableHeader="Task List", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Threads";"TID";"Entry";"Priority";"Status";"Stack"], ColWidths=[110;110;110;110;110;191]
+TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[181;144;329]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;340]
