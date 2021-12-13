@@ -27,7 +27,7 @@ static void modem_init(void)
 void main(void)
 {
 	int err;
-#if 0
+#if 0   
 	modem_init();
 #endif
 	lte_lc_func_mode_set(LTE_LC_FUNC_MODE_NORMAL);
@@ -36,6 +36,8 @@ void main(void)
 	if(err < 0 ){
 		printk("lte_lc_func_mode_set error %d\n", err);
 	}
+
+
 #if 0
 	while(1)
 	{

@@ -150,12 +150,9 @@ void main(void)
 	if(err < 0 ){
 		printk("lte_lc_func_mode_set error %d\n", err);
 	}
-	const char *devzone_thread =
-		"https://devzone.nordicsemi.com/"
-		"f/nordic-q-a/51450/timer-0-interface-program";
+
 	printk("Starting nrfx timed signal program!\n");
 	printk("This sample requires DPPIC to be set as nonsecure\n");
-	printk("See %s for more details!\n", devzone_thread);
 	printk("This sample takes in a signal,"
 	       "and uses two GPIOTE IN channels to time it via TIMER0 and DPPIC\n");
 	timer_init();

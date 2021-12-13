@@ -9,10 +9,6 @@ menu "modem off Sample Settings"
 #nothing here yet.
 endmenu
 
-module = UDP
-module-str = UDP sample
-source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
-
 menu "Zephyr Kernel"
 source "Kconfig.zephyr"
 endmenu

@@ -6,12 +6,8 @@
 
 menu "modem off Sample Settings"
 
-#nothin here for now
-
+#nothing here yet.
 endmenu
-
-
-source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
 
 menu "Zephyr Kernel"
 source "Kconfig.zephyr"
