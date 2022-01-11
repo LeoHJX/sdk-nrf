@@ -29,6 +29,11 @@
 #include <drivers/uart.h>
 
 #include <logging/log.h>
+#include <dk_buttons_and_leds.h>
+
+/* Key used to accept or reject passkey value */
+#define KEY_PAIRING_ACCEPT DK_BTN1_MSK
+#define KEY_PAIRING_REJECT DK_BTN2_MSK
 
 #define LOG_MODULE_NAME central_uart
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
@@ -42,6 +47,8 @@ LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 #define NUS_WRITE_TIMEOUT K_MSEC(150)
 #define UART_WAIT_FOR_BUF_DELAY K_MSEC(50)
 #define UART_RX_TIMEOUT 50
+
+#define SET_LE_SECURITY_LEVEL_4 1
 
 static const struct device *uart;
 static struct k_work_delayable uart_work;
@@ -58,6 +65,9 @@ static K_FIFO_DEFINE(fifo_uart_tx_data);
 static K_FIFO_DEFINE(fifo_uart_rx_data);
 
 static struct bt_conn *default_conn;
+#if SET_LE_SECURITY_LEVEL_4
+static struct bt_conn *auth_conn;
+#endif
 static struct bt_nus_client nus_client;
 
 static void ble_data_sent(struct bt_nus_client *nus, uint8_t err,
@@ -376,8 +386,11 @@ static void connected(struct bt_conn *conn, uint8_t conn_err)
 	if (err) {
 		LOG_WRN("MTU exchange failed (err %d)", err);
 	}
-
-	err = bt_conn_set_security(conn, BT_SECURITY_L2);
+#if SET_LE_SECURITY_LEVEL_4 
+	err = bt_conn_set_security(conn, BT_SECURITY_L4);
+#else
+    err = bt_conn_set_security(conn, BT_SECURITY_L2);
+#endif
 	if (err) {
 		LOG_WRN("Failed to set security: %d", err);
 
@@ -395,8 +408,14 @@ static void disconnected(struct bt_conn *conn, uint8_t reason)
 	char addr[BT_ADDR_LE_STR_LEN];
 	int err;
 
-	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+#if SET_LE_SECURITY_LEVEL_4
+	if (auth_conn) {
+		bt_conn_unref(auth_conn);
+		auth_conn = NULL;
+	}
+#endif
 	LOG_INF("Disconnected: %s (reason %u)", log_strdup(addr),
 		reason);
 
@@ -542,11 +561,75 @@ static void pairing_failed(struct bt_conn *conn, enum bt_security_err reason)
 		reason);
 }
 
+#if SET_LE_SECURITY_LEVEL_4 
+static void auth_passkey_display(struct bt_conn *conn, unsigned int passkey)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Passkey for %s: %06u\n", log_strdup(addr), passkey);
+}
+
+
+static void auth_passkey_confirm(struct bt_conn *conn, unsigned int passkey)
+{
+	char addr[BT_ADDR_LE_STR_LEN];
+
+	auth_conn = bt_conn_ref(conn);
+
+	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
+
+	LOG_INF("Passkey for %s: %06u\n", log_strdup(addr), passkey);
+	LOG_INF("Press Button 1 to confirm, Button 2 to reject.\n");
+}
+#endif
+
 static struct bt_conn_auth_cb conn_auth_callbacks = {
 	.cancel = auth_cancel,
 	.pairing_complete = pairing_complete,
-	.pairing_failed = pairing_failed
+	.pairing_failed = pairing_failed,
+#if SET_LE_SECURITY_LEVEL_4 
+	.passkey_display = auth_passkey_display,
+	.passkey_confirm = auth_passkey_confirm,
+#endif
 };
+
+#if SET_LE_SECURITY_LEVEL_4 
+static void num_comp_reply(bool accept)
+{
+	if (accept) {
+		bt_conn_auth_passkey_confirm(auth_conn);
+		LOG_INF("Numeric Match, conn 0x%x\n", (uint32_t)auth_conn);
+	} else {
+		bt_conn_auth_cancel(auth_conn);
+		LOG_INF("Numeric Reject, conn 0x%x\n", (uint32_t)auth_conn);
+	}
+
+	bt_conn_unref(auth_conn);
+	auth_conn = NULL;
+}
+
+
+static void button_handler(uint32_t button_state, uint32_t has_changed)
+{
+	uint32_t button = button_state & has_changed;
+
+	if (auth_conn) {
+		if (button & KEY_PAIRING_ACCEPT) {
+			num_comp_reply(true);
+		}
+
+		if (button & KEY_PAIRING_REJECT) {
+			num_comp_reply(false);
+		}
+
+		return;
+	}
+
+}
+
+#endif
 
 void main(void)
 {
@@ -581,6 +664,13 @@ void main(void)
 
 	printk("Starting Bluetooth Central UART example\n");
 
+#if SET_LE_SECURITY_LEVEL_4 
+	err = dk_buttons_init(button_handler);
+	if (err) {
+		LOG_ERR("Failed to initialize buttons (err %d)\n", err);
+		return;
+	}
+#endif
 
 	err = bt_scan_start(BT_SCAN_TYPE_SCAN_ACTIVE);
 	if (err) {
