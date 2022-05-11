@@ -227,7 +227,7 @@ static void lte_handler(const struct lte_lc_evt *const evt)
 		if(evt->rrc_mode == LTE_LC_RRC_MODE_IDLE){
 			if(gs_socket_transmit_started == true){
 				gs_socket_transmit_started = false;  /* only measure the time if the transmission started */
-				printk("\n############### modem active duration: %d ms ###########\n", (int32_t)k_uptime_delta(&gs_uptime_ref)); 
+				printk("\n############### wake up to enter psm: %d ms ###########\n", (int32_t)k_uptime_delta(&gs_uptime_ref)); 
 			}
 		}
 		printk("RRC mode: %s\n",
